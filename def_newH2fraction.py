@@ -427,7 +427,7 @@ def MolecularProfileTc():
 
     Pmass = 2.78e-4; #GA1 initial mass
     Density = 0.05; #in the middle of SF MUPPI cloud in phase diagram
-    T_a = 1900.
+    T_a = 500.
     if os.path.exists(path_out+'t'+str(T_a)):
         print 'path %s exist'%('t'+str(T_a))
     else:
@@ -498,7 +498,8 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
     #tcoolmax = tcool.max()
 
     if index == 10:
-        fname = path+'time_evolution_log10P'+str(np.log10(press))+'.dat'
+        #fname = path+'time_evolution_log10P'+str(np.log10(press))+'.dat'
+        fname = path+'time_evolution_log10P%.2f.dat' % np.log10(press)
         header = '# time\tLog10Rho_a\tLog10_T'
         header += '\n#\n'
         wr = open(fname, 'w')
@@ -510,6 +511,7 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
     dmin = 10.**dmin; dmax = 10.**dmax
     t = 0.
     ctrl = 3
+    tcontrol = 1.
     while t < time:
         if ma <= 0. or press*mu_c*PROTONMASS/Temp < dmin or press*mu_c*PROTONMASS/Temp > dmax:
             if ma <= 0.:
@@ -568,7 +570,8 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
             mh2 += (ma*mass_f*tfact - mh2*destr*tstep)
             if mh2 < 0.:
-                mh2 = 0.
+                mh2 = 0.; mass_f = 0.
+                tcontrol = -1.
             ma -= (ma*mass_f*tfact + mh2*destr*tstep)
             tmp = Temp
             if index == 10 and ctrl == 3:
@@ -576,10 +579,12 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
                 wr.write(line)
                 filectrl += 1
                 ctrl = 0
-            Temp = Temperature(Temp, tcooling, tstep)   #return Temp*(1 - tstep/tcooling)
+            if tcontrol > 0.:
+                Temp = Temperature(Temp, tcooling, tstep)   #return Temp*(1 - tstep/tcooling)
             Rho_a = Rho_a*tmp/Temp
             t += tstep
             ctrl += 1
+            tcontrol = 1.
     
     t_atomic = Temp
     dens_a = Rho_a
