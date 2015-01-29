@@ -5,10 +5,7 @@ import matplotlib.pyplot as plt
 
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-#path_out                      = '/scratch2/dicerbo/destr/first/'
-#path_out                      = '/scratch2/dicerbo/destr/first/mathis/'
-#path_out                      = '/scratch2/dicerbo/destr/first/mba1/'
-path_out                      = '/scratch2/dicerbo/destr/first/mba2/'
+path_out                      = '/scratch2/dicerbo/destr/first/'
 # global variables
 redshift          = 19.0
 Hubble            = 0.72
@@ -20,17 +17,14 @@ BOLTZMANN         = 1.3806e-16  # erg/K
 PROTONMASS        = 1.6726e-24  # g
 GAMMA_MINUS1      = 5./3. - 1.
 HYDROGEN_MASSFRAC = 0.76
-mu_h              = 4./ (5. * HYDROGEN_MASSFRAC + 3.)  #  molecular weight of the hot phase
+mu_h              = 4./ (5. * HYDROGEN_MASSFRAC + 3.)  # molecular weight of the hot phase
 mu_c              = 4./ (3. * HYDROGEN_MASSFRAC + 1.)  # molecular weight of the cold phase
 FracC             = 0.9
 NPCLASS           = 300
 rho_cr            = 1.9e-29 * ((1-Omega0m-Omega0l)*pow((1+redshift),2) + Omega0m*pow((1+redshift),3) + Omega0r*pow((1+redshift),4) + Omega0l) * h2
 
 #H2 Photodissociation 
-#RADFLUX           = 1.07e-18                   #erg/(cm^2 * s * Hz) from Gnedin & Kravtsov
-#RADFLUX           = 7.45e-23                   #erg/(cm^2 * s * Hz) from Mathis et al.
-#RADFLUX           = 1.e-22                     #erg/(cm^2 * s * Hz) from Machacek, Bryan & Abel (1)
-RADFLUX           = 1.e-21                     #erg/(cm^2 * s * Hz) from Machacek, Bryan & Abel (2)
+RADFLUX           = 7.45e-23                   #erg/(cm^2 * s * Hz) from Mathis et al.
 PHOTORATE         = 1.1e8 * RADFLUX            #s^-1
 SECPERYEAR        = 3.1536e7                   #s/yr
 destr             = PHOTORATE * SECPERYEAR     #number of photons destroyed per year
@@ -433,7 +427,7 @@ def MolecularProfileTc():
 
     Pmass = 2.78e-4; #GA1 initial mass
     Density = 0.05; #in the middle of SF MUPPI cloud in phase diagram
-    T_a = 2100.
+    T_a = 1700.
     if os.path.exists(path_out+'T'+str(T_a)):
         print '\tpath %s exist'%('t'+str(T_a))
     else:
@@ -448,8 +442,8 @@ def MolecularProfileTc():
 
     #time = float(raw_input("\n\t Enter total time [Gyr] :> "))
     time = 1.e9    #total time of simulation in year
-    tstep = 4.e3   #timestep (smaller then minimum of tcool matrix)
-    
+    to_ad = 4.e3   #timestep (smaller then minimum of tcool matrix)
+    tstep = adapt(to_ad)
     filename = newpath+'press-vs-fracH2.T_atom'+str(T_a)+'.dat'
     header = '#Press\tRho_atom\tT_atom\tFcoll\tFH2\tM_H2'
     header += '\n#\n'
@@ -478,13 +472,13 @@ def MolecularProfileTc():
                 frac = time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, newpath)
             elif index == 10:
                 fname = newpath+'time_evolution_log10P%.2f.dat' % np.log10(press)
-                header = '# time\tLog10Rho_a\tLog10_T'
+                header = '# time\tLog10Rho_a\tLog10_T\tfh2(t)'
                 header += '\n#\n'
                 wr = open(fname, 'w')
                 wr.write(header)
-                line = '%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(T_a))
-                line += '%e\t%e\t%e\n'%(8e3,np.log10(Rho_a), np.log10(T_a))
-                line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(T_a))
+                line = '%e\t%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(T_a), 0.)
+                line += '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(T_a), 0.)
+                line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(T_a), 0.)
                 wr.write(line)
                 line = '#Cannot move from this PS point   ->   return 0\n'
                 line += '#time = %e in %g steps\n' % (time, 0); wr.write(line)
@@ -523,7 +517,7 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
     if index == 10:
         #fname = path+'time_evolution_log10P'+str(np.log10(press))+'.dat'
         fname = path+'time_evolution_log10P%.2f.dat' % np.log10(press)
-        header = '# time\tLog10Rho_a\tLog10_T'
+        header = '# time\tLog10Rho_a\tLog10_T\tfh2(t)'
         header += '\n#\n'
         wr = open(fname, 'w')
         wr.write(header)
@@ -534,22 +528,21 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
     dmin = 10.**dmin; dmax = 10.**dmax
     t = 0.
     ctrl = 3
-    tcontrol = 1.
     while t < time:
         if ma <= 0. or press*mu_c*PROTONMASS/Temp < dmin or press*mu_c*PROTONMASS/Temp > dmax:
             if ma <= 0.:
                 if index == 10:
                     if filectrl == 0:
-                        line = '%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(8e3,np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
                         wr.write(line)
                     elif filectrl == 1:
-                        line = '%e\t%e\t%e\n'%(8e3,np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
                         wr.write(line)
                     elif filectrl == 2:
-                        line = '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
                         wr.write(line)
                     line = '#mass = %e   ->   return 1\n' % (ma)
                     line += '#time = %e in %g steps\n' % (t, t/4e3); wr.write(line)
@@ -563,16 +556,16 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             elif mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
                 if index == 10:
                     if filectrl == 0:
-                        line = '%e\t%e\t%e\n'%(0, np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(8e3, np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
                         wr.write(line)
                     elif filectrl == 1:
-                        line = '%e\t%e\t%e\n'%(8e3, np.log10(Rho_a), np.log10(Temp))
-                        line += '%e\t%e\t%e\n'%(16e3, np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
+                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
                         wr.write(line)
                     elif filectrl == 2:
-                        line = '%e\t%e\t%e\n'%(16e3, np.log10(Rho_a), np.log10(Temp))
+                        line = '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(T_a), 1.)
                         wr.write(line)
                     line = '#density is out of bound!\n'
                     line += '#time = %e in %g steps\n' % (t, t/4e3); wr.write(line)
@@ -596,40 +589,28 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
             mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
             mh2 += (ma*mass_f*tfact - mh2*destr*tstep)
+            '''
             if mh2 <= mh2*destr*tstep:
                 mh2 = 0.; mass_f = 0.
                 tcontrol = -1.
+            '''
             ma -= (ma*mass_f*tfact + mh2*destr*tstep)
             tmp = Temp
             if index == 10 and ctrl == 3:
-                line = '%e\t%e\t%e\n'%(t,np.log10(Rho_a), np.log10(Temp))
+                line = '%e\t%e\t%e\t%e\n'%(t,np.log10(Rho_a), np.log10(Temp), mh2/(mh2 + ma))
                 wr.write(line)
                 filectrl += 1
                 ctrl = 0
-            if tcontrol > 0.:
-                Temp = Temperature(Temp, tcooling, tstep)   #return Temp*(1 - tstep/tcooling)
+            Temp = Temperature(Temp, tcooling, tstep)   #return Temp*(1 - tstep/tcooling)
             Rho_a = Rho_a*tmp/Temp
             t += tstep
             ctrl += 1
-            tcontrol = 1.
     
     t_atomic = Temp
     dens_a = Rho_a
     mmol = mh2
     if index == 10:
-        if filectrl == 0:
-            line = '%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(Temp))
-            line += '%e\t%e\t%e\n'%(8e3,np.log10(Rho_a), np.log10(Temp))
-            line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
-            wr.write(line)
-        elif filectrl == 1:
-            line = '%e\t%e\t%e\n'%(8e3,np.log10(Rho_a), np.log10(Temp))
-            line += '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
-            wr.write(line)
-        elif filectrl == 2:
-            line = '%e\t%e\t%e\n'%(16e3,np.log10(Rho_a), np.log10(Temp))
-            wr.write(line)
-        line = '#time = %e in %g steps\n' % (t, t/4e3); wr.write(line)
+        line = '#time = %e in %g steps\n' % (t, t/4.e3); wr.write(line)
         wr.flush()
         wr.close()
         index = 0
@@ -649,4 +630,12 @@ def Temperature(Temp, tcooling, tstep):
         return tmp
     else:
         return 10.
+
+def adapt(dt):
+    if dt*destr < 5.e-2:
+        print '\tstarting with timestep %e\n' % dt
+        return dt
+    else:
+        adapt(dt - 10.)
+
 main()
