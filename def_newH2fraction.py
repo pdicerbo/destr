@@ -427,7 +427,7 @@ def MolecularProfileTc():
 
     Pmass = 2.78e-4; #GA1 initial mass
     Density = 0.05; #in the middle of SF MUPPI cloud in phase diagram
-    T_a = 1700.
+    T_a = 2500.
     if os.path.exists(path_out+'T'+str(T_a)):
         print '\tpath %s exist'%('t'+str(T_a))
     else:
@@ -566,6 +566,9 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
                         wr.write(line)
                     elif filectrl == 2:
                         line = '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(T_a), 1.)
+                        wr.write(line)
+                    else:
+                        line = '%e\t%e\t%e\t%e\n'%(t, np.log10(Rho_a), np.log10(T_a), 1.)
                         wr.write(line)
                     line = '#density is out of bound!\n'
                     line += '#time = %e in %g steps\n' % (t, t/4e3); wr.write(line)
