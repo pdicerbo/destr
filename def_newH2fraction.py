@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/first/'
+#path_out                      = '/scratch2/dicerbo/destr/first/'
+#path_out                      = '/scratch2/dicerbo/destr/first/mathis/'
+#path_out                      = '/scratch2/dicerbo/destr/first/mba1/'
+path_out                      = '/scratch2/dicerbo/destr/first/mba2/'
 # global variables
 redshift          = 19.0
 Hubble            = 0.72
@@ -24,7 +27,10 @@ NPCLASS           = 300
 rho_cr            = 1.9e-29 * ((1-Omega0m-Omega0l)*pow((1+redshift),2) + Omega0m*pow((1+redshift),3) + Omega0r*pow((1+redshift),4) + Omega0l) * h2
 
 #H2 Photodissociation 
-RADFLUX           = 1.07e-18                   #erg/(cm^2 * s * Hz)
+#RADFLUX           = 1.07e-18                   #erg/(cm^2 * s * Hz) from Gnedin & Kravtsov
+#RADFLUX           = 7.45e-23                   #erg/(cm^2 * s * Hz) from Mathis et al.
+#RADFLUX           = 1.e-22                     #erg/(cm^2 * s * Hz) from Machacek, Bryan & Abel (1)
+RADFLUX           = 1.e-21                     #erg/(cm^2 * s * Hz) from Machacek, Bryan & Abel (2)
 PHOTORATE         = 1.1e8 * RADFLUX            #s^-1
 SECPERYEAR        = 3.1536e7                   #s/yr
 destr             = PHOTORATE * SECPERYEAR     #number of photons destroyed per year
@@ -497,7 +503,7 @@ def MolecularProfileTc():
     if pstr > 1:
         line = '#(Log10)Pressure %g at temperature %g is out of bound\n'%(pstart, tstart)
         fp.write(line)
-    fp.write('# Done!')
+    fp.write('# Done!\n')
     fp.flush()
     fp.close()
 
