@@ -59,7 +59,7 @@ def comparison():
     #data to plot
     time = mat1[:,0]
     f1 = mat1[:, 3]
-    f2 = mat2[:-1, 3]
+    f2 = mat2[:, 3]
     time[time == 0.] = 1.
     time = np.log10(time)
     plt.figure()
