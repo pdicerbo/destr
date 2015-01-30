@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from scipy.interpolate import griddata
 import colorsys
-#from matplotlib.mlab import griddata
+from matplotlib import rc
 
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/first/'
-path_plot                     = '/scratch2/dicerbo/destr/exit/first/'
+path_out                      = '/scratch2/dicerbo/destr/second/'
+path_plot                     = '/scratch2/dicerbo/destr/exit/second/'
 path_exit                     = '/scratch2/dicerbo/destr/exit/'
 path_two                      = '/scratch2/dicerbo/plot_path/first/'
 # global arrays: Temperature, H2OverDensity, H2Fraction, tcool to load UM's tables
@@ -23,8 +23,8 @@ t_cool     = None          # dimension 50x50
 
 
 def main():
-    comparison()
-    #init_plot()
+    #comparison()
+    init_plot()
 
 def comparison():
 
@@ -152,20 +152,26 @@ def plot_def(directory):
         h[ind] = ((p-pmin) / (pmax-pmin))*250.
         ind += 1
     cdef = [colorsys.hsv_to_rgb(x/360., 1., 1.) for x in h]
-    
+
     #plots
     fig = plt.figure(figsize=(18,16))
     figura = fig.add_subplot(2, 1, 1, adjustable='box', aspect = 1.1)
-    plt.title('Paths in Phase Diagram', fontsize = 28)
+    plt.title('Paths in Phase Diagram\n', fontsize = 28)
     #figura = plt.contourf(Dens,T,H2,levels0,extend='both', cmap = cm.hot)
     figura = plt.contourf(Dens,T,tcool,levels0,extend='both', cmap = cm.hot_r)
     ax1 = plt.gca()
     ax1.set_xlim([Dens.min(), Dens.max()])
     ax1.set_ylim([1., 5.])
+
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(17)
+    for tick in ax1.yaxis.get_major_ticks():
+        tick.label.set_fontsize(17)
+
     cbar = plt.colorbar(figura,format='%3.1f', shrink=0.8)
     cbar.set_ticks(np.linspace(v_min,v_max,num=levels0.size,endpoint=True))
     #cbar.set_label('H$_{2}$ fraction',fontsize=20)
-    cbar.set_label('t_cool',fontsize=20)
+    cbar.set_label('$\log_{10}t_{cool} [Gyr]$',fontsize=25)
     print "\n\tUmberto's matrix plotted\n"
         
     k = 0
@@ -179,11 +185,11 @@ def plot_def(directory):
         k += 1
     lgd = plt.legend(bbox_to_anchor=(1.55, 0.5), loc=5, borderaxespad=1.)
     
-    plt.xlabel('log10 $\\rho$',fontsize=20) ; plt.ylabel('Log10 T[k]',fontsize=20)
+    plt.xlabel('$\log_{10}\\rho [g/cm^3]$',fontsize=25) ; plt.ylabel('$\log_{10} T[k]$',fontsize=25)
 
     #Blitz&Rosolowsky plot
     figura2 = fig.add_subplot(2, 1, 2, adjustable='box', aspect = 1.3)
-    plt.title('Blitz & Rosolowsky', fontsize = 28)
+    plt.title('Blitz & Rosolowsky\n', fontsize = 28)
     ax2 = plt.gca()
     newm = np.loadtxt(br, comments = '#'); newm = newm.T
     press = newm[0, :]
@@ -191,8 +197,16 @@ def plot_def(directory):
     fh2   = newm[4, :]
     ax2.set_xlim([3., 6.])
     ax2.set_ylim([0., 1.02])
+    ax2.set_xlabel('$\log_{10} P/k_B (dyne/cm^2)$', fontsize = 25)
+    ax2.set_ylabel('$f_{H2}$', fontsize = 25)
     plt.plot(press, br_ro, 'k-')
     plt.plot(press, fh2, 'b-')
+
+    for tick in ax2.xaxis.get_major_ticks():
+        tick.label.set_fontsize(17)
+    for tick in ax2.yaxis.get_major_ticks():
+        tick.label.set_fontsize(17)
+
     #scale figure2
     scale = figura2.get_position().bounds
     newpos = [scale[0]*3./4. + 0.2, scale[1]*3./4., scale[2]*3./4., scale[3]*3./4.]
