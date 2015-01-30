@@ -454,7 +454,7 @@ def MolecularProfileTc():
     pstr = 0
     for p in lst:
         press = 10.**p   #P/k_b
-        if press*mu_c*PROTONMASS/T_a < 10.**Dens.min() or press*mu_c*PROTONMASS/T_a > 10.**Dens.max():
+        if press*mu_c*PROTONMASS/T_a < 10.**Dens.min() or press*mu_c*PROTONMASS/T_a > 10.**Dens.max() and T_a > 1.e3:
             if pstr == 0:
                 pstart = p; tstart = T_a; pstr = 10.
             Fcoll = molecular_fraction(press)
