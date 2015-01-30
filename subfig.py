@@ -11,7 +11,7 @@ import colorsys
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
 path_out                      = '/scratch2/dicerbo/destr/first/'
-path_plot                     = '/scratch2/dicerbo/destr/exit/'
+path_plot                     = '/scratch2/dicerbo/destr/exit/first/'
 # global arrays: Temperature, H2OverDensity, H2Fraction, tcool to load UM's tables
 #                T in K, tcool in Gyr
 T          = None          # dimension 1x50
@@ -23,10 +23,17 @@ t_cool     = None          # dimension 50x50
 def main():
     global path_out
 
+    if os.path.exists(path_plot):
+        print '\tpath %s exist!'%(path_plot)
+    else:
+        print '\n\tmaking directory'
+        os.makedirs(path_plot)
+        print '\t%s created successfully'%(path_plot)
+
     dirs = os.listdir(path_out)
-    dirs.sort()
+    dirs.sort();
     for d in dirs:
-        if string.count(d, 'jpg') == 0:
+        if string.count(d, 'jpg') == 0 and string.count(d, 'T') == 1:
             print '\n\tStart working on '+ d
             #adjust(path_out, d)
             plot_def(d)
@@ -77,7 +84,6 @@ def adjust(path, directory):
 
 def plot_def(directory):
     print '\n\tWithin plot function\n'
-    global path_read; global path_out
     #Load tcool matrix
     LoadMatrix(filename=matrix_Logdelta_LogT_H2_tcool)
     global T ; global Dens ; global FH2; global t_cool
