@@ -12,6 +12,8 @@ matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
 path_out                      = '/scratch2/dicerbo/destr/first/'
 path_plot                     = '/scratch2/dicerbo/destr/exit/first/'
+path_exit                     = '/scratch2/dicerbo/destr/exit/'
+path_two                      = '/scratch2/dicerbo/plot_path/first/'
 # global arrays: Temperature, H2OverDensity, H2Fraction, tcool to load UM's tables
 #                T in K, tcool in Gyr
 T          = None          # dimension 1x50
@@ -21,10 +23,62 @@ t_cool     = None          # dimension 50x50
 
 
 def main():
-    global path_out
+    comparison()
+    #init_plot()
 
+def comparison():
+
+    print '\n\tWithin comparison function\n'
+    #tmp = str(raw_input("\n\tEnter initial temperature of gas [Gyr] :> "))
+    tmp = '500'
+    
+    dir1 = path_out+'T'+tmp+'/'
+    if not os.path.exists(dir1):
+        print '\tError: directory ' + direct + 'doesent exist!\n\tExit'
+        return 1.
+    dir2 = path_two+'T'+tmp+'/'
+
+    files = os.listdir(dir1)
+    nametp = []
+    for name in files:
+        if string.count(name, 'press') == 0:
+            matrix = np.loadtxt(dir1+name, comments = '#')
+            if len(matrix) > 3.:
+                nametp.append(name)
+        else:
+            pass
+    
+    namedef = nametp[(len(nametp) - 2)]
+    #print nametp
+    print '\tPlotting ' + namedef + ' file!'
+    mat1 = np.loadtxt(dir1+namedef, comments = '#')
+    print '\tMatrix from ' + dir1+namedef + ' loaded'
+    mat2 = np.loadtxt(dir2+namedef, comments = '#')
+    print '\tMatrix from ' + dir2+namedef + ' loaded'
+
+    #data to plot
+    time = mat1[:,0]
+    f1 = mat1[:, 3]
+    f2 = mat2[:-1, 3]
+    time[time == 0.] = 1.
+    time = np.log10(time)
+    plt.figure()
+    plt.plot(time, f1, 'k-+', label = 'destr')
+    plt.plot(time, f2, 'b-*', label = 'full')
+    plt.legend(loc = 2)
+    #plt.set_xlabel('time (log t)')
+    #plt.set_ylabel('H2 Fraction')
+    #plt.set_title('H2 Fraction Evolution')
+
+    newname = path_exit + 'comparisonLog10P' + namedef[-8:-4] + '.jpg'
+    plt.savefig(newname)
+    plt.close('all')
+    print '\n\t'+newname[len(path_exit):]+' done\n'
+
+
+def init_plot():
     if os.path.exists(path_plot):
-        print '\tpath %s exist!'%(path_plot)
+        print '\n\tpath %s exist!'%(path_plot)
     else:
         print '\n\tmaking directory'
         os.makedirs(path_plot)
@@ -40,46 +94,6 @@ def main():
             print '\n\tEnd working on ' + d
 
     print '\n\tFinally End\n'
-
-def adjust(path, directory):
-
-    print '\n\tWithin adjust function\n'
-
-    global matrix_Logdelta_LogT_H2
-    LoadMatrix(filename=matrix_Logdelta_LogT_H2)
-    global T ; global Dens ; global FH2
-
-    files = os.listdir(path+directory)
-    for name in files:
-        if string.count(name, 'time') != 0:
-            #print '\tWorking on '+name
-            matrix = np.loadtxt(path+directory+'/'+name, comments = '#')
-            if matrix.size <= 6:
-                print '\n\t'+name+' has '+str(matrix.size / 3)+' lines\n'
-                if matrix.size == 3:
-                    mt = np.zeros((3, 3), dtype = float)
-                    mt[0:] = matrix[0:]
-                    fp = open(path+directory+'/'+name, 'w')
-                    np.savetxt(fp, mt, fmt='%g', delimiter='\t', newline='\n')
-                    fp.flush(); fp.close()
-                    print '\t-> Corrected\n'
-                elif matrix.size == 6:
-                    mt = np.zeros((3, 3), dtype = float)
-                    mt[0] = matrix[0]
-                    mt[1] = matrix[0]
-                    mt[2] = matrix[1]
-                    fp = open(path+directory+'/'+name, 'w')
-                    np.savetxt(fp, mt, fmt='%g', delimiter='\t', newline='\n')
-                    fp.flush();fp.close()
-                    print '\t-> Corrected\n'
-                else:
-                    print '\n\tFile'+name+' have some problem.....\n'
-
-            else:
-                print '\tFile '+name+' have enough data'
-        else:
-            print "\n\tFile " + name + " is for Blitz&Rosolowsky's plot -> Continue\n"
-            continue
 
 
 def plot_def(directory):
