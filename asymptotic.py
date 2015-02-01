@@ -561,8 +561,8 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             elif np.log10(Temp) < 3.: #mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
                 if t < tstep*0.8:
                     frac_h2 = FitTDelta(Temp, dmax, fh2); tcooling = FitTDelta(Temp, dmax, tcool)
-                tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
-                mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
+                #tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
+                #mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
                 mh2_tprec = mh2
                 mh2 += (-mh2*destr*tstep + ma*mass_f*tfact)
                 ma -= (ma*mass_f*tfact - mh2_tprec*destr*tstep)
@@ -576,32 +576,6 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
                 Rho_a = Rho_a*tmp/Temp
                 t += tstep
                 ctrl += 1
-                """
-                    if filectrl == 0:
-                        line = '%e\t%e\t%e\t%e\n'%(0,np.log10(Rho_a), np.log10(Temp), 1.)
-                        line += '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
-                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
-                        wr.write(line)
-                    elif filectrl == 1:
-                        line = '%e\t%e\t%e\t%e\n'%(tstep*3,np.log10(Rho_a), np.log10(Temp), 1.)
-                        line += '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
-                        wr.write(line)
-                    elif filectrl == 2:
-                        line = '%e\t%e\t%e\t%e\n'%(tstep*6,np.log10(Rho_a), np.log10(Temp), 1.)
-                        wr.write(line)
-                    else:
-                        line = '%e\t%e\t%e\t%e\n'%(t, np.log10(Rho_a), np.log10(Temp), 1.)
-                        wr.write(line)
-                    line = '#density is out of bound!\n'
-                    line += '#time = %e in %g steps\n' % (t, t/tstep); wr.write(line)
-                    wr.flush(); wr.close()
-                    t_atomic = Temp
-                    dens_a = Rho_a
-                    mmol = mh2
-                    index = 0
-                filectrl = 0
-                return 1.
-                """
             else:
                 filectrl = 0
                 print "\terror"
@@ -610,6 +584,8 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             frac_h2 = FitTDelta(Temp, Rho_a, fh2)
             if frac_h2 < 1.e-7:
                 frac_h2 = 0.
+            elif frac_h2 > 0.3:
+                frac_h2 = 0.3
             tcooling = FitTDelta(Temp, Rho_a, tcool)
             if tcooling <= 1.e2:
                 tcooling = 1.e9    #from bilinear_interpolation can return 0.
