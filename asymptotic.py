@@ -561,6 +561,8 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             elif np.log10(Temp) < 3.: #mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
                 if t < tstep*0.8:
                     frac_h2 = FitTDelta(Temp, dmax, fh2); tcooling = FitTDelta(Temp, dmax, tcool)
+                    if frac_h2 > 0.3:
+                        frac_h2 = 0.3
                 tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
                 mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
                 mh2_tprec = mh2
