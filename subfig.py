@@ -10,8 +10,8 @@ from matplotlib import rc
 
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/second/'
-path_plot                     = '/scratch2/dicerbo/destr/exit/second/'
+path_out                      = '/scratch2/dicerbo/destr/interm_5dote_m21/tstep/' #asymptotic/'
+path_plot                     = '/scratch2/dicerbo/destr/exit/tstep/'
 path_exit                     = '/scratch2/dicerbo/destr/exit/'
 path_two                      = '/scratch2/dicerbo/plot_path/first/'
 # global arrays: Temperature, H2OverDensity, H2Fraction, tcool to load UM's tables
@@ -87,7 +87,7 @@ def init_plot():
     dirs = os.listdir(path_out)
     dirs.sort();
     for d in dirs:
-        if string.count(d, 'jpg') == 0 and string.count(d, 'T') == 1:
+        if string.count(d, 'l') == 0 and string.count(d, 'T') == 1:
             print '\n\tStart working on '+ d
             #adjust(path_out, d)
             plot_def(d)
@@ -197,7 +197,7 @@ def plot_def(directory):
     fh2   = newm[4, :]
     ax2.set_xlim([3., 6.])
     ax2.set_ylim([0., 1.02])
-    ax2.set_xlabel('$\log_{10} P/k_B (dyne/cm^2)$', fontsize = 25)
+    ax2.set_xlabel('$\log_{10} P/k_B [K/cm^3]$', fontsize = 25)
     ax2.set_ylabel('$f_{H2}$', fontsize = 25)
     plt.plot(press, br_ro, 'k-')
     plt.plot(press, fh2, 'b-')
