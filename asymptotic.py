@@ -3,9 +3,9 @@ import os
 from bisect import bisect_left # for BilinearInterpolation
 import matplotlib.pyplot as plt
 
-matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
-matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/asymptotic/'
+matrix_Logdelta_LogT_H2       = 'matrix_newdef_Logdelta_LogT_H2.dat'
+matrix_Logdelta_LogT_H2_tcool = 'matrix_newdef_Logdelta_LogT_tcool.dat'
+path_out                      = '/scratch2/dicerbo/destr/first/'
 # global variables
 redshift          = 19.0
 Hubble            = 0.72
@@ -24,7 +24,7 @@ NPCLASS           = 300
 rho_cr            = 1.9e-29 * ((1-Omega0m-Omega0l)*pow((1+redshift),2) + Omega0m*pow((1+redshift),3) + Omega0r*pow((1+redshift),4) + Omega0l) * h2
 
 #H2 Photodissociation 
-RADFLUX           = 7.45e-23                   #erg/(cm^2 * s * Hz) from Mathis et al.
+RADFLUX           = 7.45e-23   #5.e-21         #erg/(cm^2 * s * Hz) from Mathis et al.
 PHOTORATE         = 1.1e8 * RADFLUX            #s^-1
 SECPERYEAR        = 3.1536e7                   #s/yr
 destr             = PHOTORATE * SECPERYEAR     #number of photons destroyed per year
@@ -401,19 +401,19 @@ def MolecularProfileI():
     print '\n\t Output in file '+filename+'\n\n'
 
 
-
 FracH = 0.
 t_atomic = 0.
 dens_a = 0.
 mmol = 0.
 index = 0
 filectrl = 0
+tstep = 4.e3
 
 def MolecularProfileTc():
     print '\n\t Within MolecularProfileTc function\n'
     
     global T; global Dens; global FH2; global t_cool
-    global mmol; global t_atomic; global dens_a; global index
+    global mmol; global t_atomic; global dens_a; global index; global tstep
     if T==None or Dens==None or FH2==None:
         # load the matrix                                                                                                                                                               
         LoadMatrix(filename=matrix_Logdelta_LogT_H2)
@@ -427,23 +427,24 @@ def MolecularProfileTc():
 
     Pmass = 2.78e-4; #GA1 initial mass
     Density = 0.05; #in the middle of SF MUPPI cloud in phase diagram
-    T_a = 500.
+    T_a = 2100.
     if os.path.exists(path_out+'T'+str(T_a)):
         print '\tpath %s exist'%('t'+str(T_a))
+        to_make = path_out+'T%s'%(str(T_a)); newpath = to_make[:-2]+'/'
     else:
         to_make = path_out+'T%s'%(str(T_a))
         os.makedirs(to_make[:-2])
         print '\t%s created successfully'%('T'+str(T_a))
-    newpath = to_make[:-2]+'/'
+        newpath = to_make[:-2]+'/'
     pmin = 1.e3
     pmax = 1.e6
     dp = (np.log10(pmax) - np.log10(pmin))/NPCLASS
     lst = np.arange(np.log10(pmin), np.log10(pmax), dp)
 
     #time = float(raw_input("\n\t Enter total time [Gyr] :> "))
-    time = 1.e9    #total time of simulation in year
+    time = 1.e8    #total time of simulation in year
     to_ad = 4.e3   #timestep (smaller then minimum of tcool matrix)
-    tstep = adapt(to_ad)
+    to_ad = adapt(to_ad)
     filename = newpath+'press-vs-fracH2.T_atom'+str(T_a)+'.dat'
     header = '#Press\tRho_atom\tT_atom\tFcoll\tFH2\tM_H2'
     header += '\n#\n'
@@ -454,7 +455,7 @@ def MolecularProfileTc():
     pstr = 0
     for p in lst:
         press = 10.**p   #P/k_b
-        if press*mu_c*PROTONMASS/T_a < 10.**Dens.min() or press*mu_c*PROTONMASS/T_a > 10.**Dens.max() and T_a > 1.e3:
+        if press*mu_c*PROTONMASS/T_a < 10.**Dens.min() or press*mu_c*PROTONMASS/T_a > 10.**Dens.max():
             if pstr == 0:
                 pstart = p; tstart = T_a; pstr = 10.
             Fcoll = molecular_fraction(press)
@@ -469,7 +470,7 @@ def MolecularProfileTc():
             Rho_a = press*mu_c*PROTONMASS/T_a
             check_f = BilinearInterpolation(Dens, T, fh2, Rho_a, T_a)
             if check_f > 5.e-9:
-                frac = time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, newpath)
+                frac = time_int(press, Pmass, Density, T_a, tcool, fh2, time, newpath)
                 if frac < 0.:
                     line = '#error at p %g and temp %g\n'%(p, t_atomic); fp.write(line)
             elif index == 10:
@@ -506,7 +507,7 @@ def MolecularProfileTc():
     print '\n\t Output in file '+filename+'\n\n'
 
 
-def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
+def time_int(press, Pmass, Density, T_a, tcool, fh2, time, path):
     global Dens
     global t_atomic, dens_a
     global mmol
@@ -558,11 +559,9 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
                     index = 0
                 filectrl = 0
                 return 1.
-            elif np.log10(Temp) < 3.: #mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
+            elif np.log10(Temp) <= 3.: #mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
                 if t < tstep*0.8:
                     frac_h2 = FitTDelta(Temp, dmax, fh2); tcooling = FitTDelta(Temp, dmax, tcool)
-                    if frac_h2 > 0.3:
-                        frac_h2 = 0.3
                 tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
                 mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
                 mh2_tprec = mh2
@@ -586,20 +585,14 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, tstep, path):
             frac_h2 = FitTDelta(Temp, Rho_a, fh2)
             if frac_h2 < 1.e-7:
                 frac_h2 = 0.
-            elif frac_h2 > 0.3:   #DA AGGIUSTARE!!!!
-                frac_h2 = 0.3
             tcooling = FitTDelta(Temp, Rho_a, tcool)
             if tcooling <= 1.e2:
+                print '\tERROR: cooling time too low\n'
                 tcooling = 1.e9    #from bilinear_interpolation can return 0.
             tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
             mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
             mh2_tprec = mh2
             mh2 += (-mh2*destr*tstep + ma*mass_f*tfact)
-            '''
-            if mh2 <= mh2*destr*tstep:
-                mh2 = 0.; mass_f = 0.
-                tcontrol = -1.
-            '''
             ma -= (ma*mass_f*tfact - mh2_tprec*destr*tstep)
             tmp = Temp
             if index == 10 and ctrl == 3:
@@ -638,9 +631,11 @@ def Temperature(Temp, tcooling, tstep):
         return 10.
 
 def adapt(dt):
-    if dt*destr < 5.e-2:
-        print '\tstarting with timestep %e\n' % dt
-        return dt
+    global tstep
+    if dt*destr < 2.e-3:
+        print '\tstarting with timestep %.1e\n' % dt
+        tstep = dt
+        return tstep
     else:
         adapt(dt - 10.)
 
