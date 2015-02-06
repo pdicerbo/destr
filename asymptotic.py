@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 matrix_Logdelta_LogT_H2       = 'matrix_newdef_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_newdef_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/first/'
+path_out                      = '/scratch2/dicerbo/destr/fourth/'
 # global variables
 redshift          = 19.0
 Hubble            = 0.72
@@ -24,7 +24,7 @@ NPCLASS           = 300
 rho_cr            = 1.9e-29 * ((1-Omega0m-Omega0l)*pow((1+redshift),2) + Omega0m*pow((1+redshift),3) + Omega0r*pow((1+redshift),4) + Omega0l) * h2
 
 #H2 Photodissociation 
-RADFLUX           = 7.45e-23   #5.e-21         #erg/(cm^2 * s * Hz) from Mathis et al.
+RADFLUX           = 5.e-19                     #erg/(cm^2 * s * Hz) from Mathis et al. first: 7.45e-23; second: 5.e-21; third: 1.e-20; fourth: 5.e-19
 PHOTORATE         = 1.1e8 * RADFLUX            #s^-1
 SECPERYEAR        = 3.1536e7                   #s/yr
 destr             = PHOTORATE * SECPERYEAR     #number of photons destroyed per year
@@ -442,7 +442,7 @@ def MolecularProfileTc():
     lst = np.arange(np.log10(pmin), np.log10(pmax), dp)
 
     #time = float(raw_input("\n\t Enter total time [Gyr] :> "))
-    time = 1.e8    #total time of simulation in year
+    time = 5.e6    #total time of simulation in year
     to_ad = 4.e3   #timestep (smaller then minimum of tcool matrix)
     to_ad = adapt(to_ad)
     filename = newpath+'press-vs-fracH2.T_atom'+str(T_a)+'.dat'
@@ -586,9 +586,6 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, path):
             if frac_h2 < 1.e-7:
                 frac_h2 = 0.
             tcooling = FitTDelta(Temp, Rho_a, tcool)
-            if tcooling <= 1.e2:
-                print '\tERROR: cooling time too low\n'
-                tcooling = 1.e9    #from bilinear_interpolation can return 0.
             tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
             mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
             mh2_tprec = mh2
@@ -632,10 +629,15 @@ def Temperature(Temp, tcooling, tstep):
 
 def adapt(dt):
     global tstep
-    if dt*destr < 2.e-3:
+    if dt*destr < 2.e-3 and dt >= 10.:
         print '\tstarting with timestep %.1e\n' % dt
         tstep = dt
         return tstep
+    elif dt*destr < 2.e-3 and dt < 10.:
+        print '\tWarning: timestep bigger then necessary. Value: %.1e\n' % dt
+        print '\tSetting to 10 yr'
+        tstep = 10.; dt = 10
+        return dt
     else:
         adapt(dt - 10.)
 
