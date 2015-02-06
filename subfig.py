@@ -4,16 +4,16 @@ import string
 from bisect import bisect_left # for BilinearInterpolation
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from scipy.interpolate import griddata
 import colorsys
-from matplotlib import rc
+#from matplotlib import rc
 
 matrix_Logdelta_LogT_H2       = 'matrix_modif_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_modif_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/interm_5dote_m21/tstep/' #asymptotic/'
-path_plot                     = '/scratch2/dicerbo/destr/exit/tstep/'
-path_exit                     = '/scratch2/dicerbo/destr/exit/'
-path_two                      = '/scratch2/dicerbo/plot_path/first/'
+#path_out                      = '/scratch2/dicerbo/destr/time1e5/first/'
+path_out                      = '/scratch2/dicerbo/destr/third/'
+path_plot                     = '/scratch2/dicerbo/destr/exit/time1e5/first/'
+path_exit                     = '/scratch2/dicerbo/destr/exit/compare/'
+path_two                      = '/scratch2/dicerbo/plot_path/very_def/'
 # global arrays: Temperature, H2OverDensity, H2Fraction, tcool to load UM's tables
 #                T in K, tcool in Gyr
 T          = None          # dimension 1x50
@@ -23,20 +23,29 @@ t_cool     = None          # dimension 50x50
 
 
 def main():
-    #comparison()
-    init_plot()
+    comparison()
+    #init_plot()
 
 def comparison():
 
     print '\n\tWithin comparison function\n'
     #tmp = str(raw_input("\n\tEnter initial temperature of gas [Gyr] :> "))
-    tmp = '500'
+    tmp = '700'
     
     dir1 = path_out+'T'+tmp+'/'
     if not os.path.exists(dir1):
-        print '\tError: directory ' + direct + 'doesent exist!\n\tExit'
+        print '\tError: directory ' + dir1 + 'doesent exist!\n\tExit'
         return 1.
     dir2 = path_two+'T'+tmp+'/'
+    
+    pathx = path_exit+'T'+tmp+'/'
+    if os.path.exists(pathx):
+        print '\n\tpath %s exist!'%(pathx)
+    else:
+        print '\n\tmaking directory'
+        os.makedirs(pathx)
+        print '\t%s created successfully'%(pathx)
+
 
     files = os.listdir(dir1)
     nametp = []
@@ -45,35 +54,42 @@ def comparison():
             matrix = np.loadtxt(dir1+name, comments = '#')
             if len(matrix) > 3.:
                 nametp.append(name)
+                print '\tfile %s listed' % (name)
         else:
-            pass
+            print '\tfile %s skipped' % (name)
     
-    namedef = nametp[(len(nametp) - 2)]
-    #print nametp
-    print '\tPlotting ' + namedef + ' file!'
-    mat1 = np.loadtxt(dir1+namedef, comments = '#')
-    print '\tMatrix from ' + dir1+namedef + ' loaded'
-    mat2 = np.loadtxt(dir2+namedef, comments = '#')
-    print '\tMatrix from ' + dir2+namedef + ' loaded'
+    #namedef = nametp[(len(nametp) - 7)]
+
+    for namedef in nametp:
+        print '\tPlotting ' + namedef + ' file!'
+        mat1 = np.loadtxt(dir1+namedef, comments = '#')
+        print '\tMatrix from ' + dir1+namedef + ' loaded; len: %g' % (len(mat1))
+        mat2 = np.loadtxt(dir2+namedef, comments = '#')
+        print '\tMatrix from ' + dir2+namedef + ' loaded; len: %g' % (len(mat2))
 
     #data to plot
-    time = mat1[:,0]
-    f1 = mat1[:, 3]
-    f2 = mat2[:, 3]
-    time[time == 0.] = 1.
-    time = np.log10(time)
-    plt.figure()
-    plt.plot(time, f1, 'k-+', label = 'destr')
-    plt.plot(time, f2, 'b-*', label = 'full')
-    plt.legend(loc = 2)
-    #plt.set_xlabel('time (log t)')
-    #plt.set_ylabel('H2 Fraction')
-    #plt.set_title('H2 Fraction Evolution')
+        time1 = mat1[:,0]
+        f1 = mat1[:, 3]
+        time2 = mat2[:,0]
+        f2 = mat2[:, 3]
+        time1[time1 == 0.] = 1.
+        time1 = np.log10(time1)
+        time2[time2 == 0.] = 1.
+        time2 = np.log10(time2)
+        plt.figure()
+        plt.plot(time1, f1, 'k.', label = 'destr')
+        plt.plot(time2, f2, 'r-', label = 'full')
+        ax = plt.gca()
+        plt.legend(loc = 2)
+        ax.set_xlabel('time (log t)')
+        ax.set_ylabel('H2 Fraction')
+        ax.set_title('H2 Fraction Evolution')
 
-    newname = path_exit + 'comparisonLog10P' + namedef[-8:-4] + '.jpg'
-    plt.savefig(newname)
-    plt.close('all')
-    print '\n\t'+newname[len(path_exit):]+' done\n'
+        newname = pathx + 'comparisonLog10P' + namedef[-8:-4] + '.jpg'
+        plt.savefig(newname)
+        plt.close('all')
+        print '\n\t'+newname[len(pathx):]+' done\n'
+    print '\n\tFinally end\n'
 
 
 def init_plot():
