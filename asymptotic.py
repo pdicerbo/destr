@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 matrix_Logdelta_LogT_H2       = 'matrix_newdef_Logdelta_LogT_H2.dat'
 matrix_Logdelta_LogT_H2_tcool = 'matrix_newdef_Logdelta_LogT_tcool.dat'
-path_out                      = '/scratch2/dicerbo/destr/fourth/'
+path_out                      = '/scratch2/dicerbo/destr/tcool_eq/third/'
 # global variables
 redshift          = 19.0
 Hubble            = 0.72
@@ -24,7 +24,7 @@ NPCLASS           = 300
 rho_cr            = 1.9e-29 * ((1-Omega0m-Omega0l)*pow((1+redshift),2) + Omega0m*pow((1+redshift),3) + Omega0r*pow((1+redshift),4) + Omega0l) * h2
 
 #H2 Photodissociation 
-RADFLUX           = 5.e-19                     #erg/(cm^2 * s * Hz) from Mathis et al. first: 7.45e-23; second: 5.e-21; third: 1.e-20; fourth: 5.e-19
+RADFLUX           = 1.e-20                     #erg/(cm^2 * s * Hz) from Mathis et al. first: 7.45e-23; second: 5.e-21; third: 1.e-20; fourth: 5.e-19 (5.e6 yr with tstep bigger then min)
 PHOTORATE         = 1.1e8 * RADFLUX            #s^-1
 SECPERYEAR        = 3.1536e7                   #s/yr
 destr             = PHOTORATE * SECPERYEAR     #number of photons destroyed per year
@@ -276,69 +276,72 @@ def BilinearInterpolation(x_values, y_values, values, x, y):
     """
     x = np.log10(x)
     y = np.log10(y)
-    j = bisect_left(x_values, x) - 1
-    i = bisect_left(y_values, y) - 1
-    #condizioni di uscita PROVVISORIE
-    if ((x_values.max() - x) <= 0. or (x_values.min() - x) >= 0.) and ((y_values.max() - y) <= 0 or (y_values.min() - y) >= 0): 
-        return 0.
-    elif ((x_values.max() - x) >= 0. and (x_values.min() - x) <= 0.) and ((y_values.max() - y) >= 0 and (y_values.min() - y) <= 0):
+    j = bisect_left(x_values, x)
+    i = bisect_left(y_values, y)
+    #case = 0
+    if ((x_values.max() - x) < 0. or (x_values.min() - x) > 0.) and ((y_values.max() - y) < 0. or (y_values.min() - y) > 0.): 
+        if values.max() < 5.e-1:
+            return 0.
+        else:
+            return 1.
+    elif ((x_values.max() - x) > 0. and (x_values.min() - x) < 0.) and ((y_values.max() - y) > 0. and (y_values.min() - y) < 0.):
         #tipical case
-        x1 = x_values[j:j + 1]
-        x2 = x_values[j + 1:j + 2]
-        y1 = y_values[i:i + 1] 
-        y2 = y_values[i + 1:i + 2]
-        f1, f3 = values[i][j:j + 2]
-        f2, f4 = values[i + 1][j:j+2]
-    
+        x1, x2 = x_values[j-1:j+1]
+        y1, y2 = y_values[i-1:i+1] 
+        f1, f3 = values[i-1][j-1:j+1]
+        f2, f4 = values[i][j-1:j+1]
         dx = x - x1; dy = y - y1
         lx = x2 - x1; ly = y2 - y1
 
-    elif x_values.max() < x:
-        x1 = x_values[j - 1:j]
-        x2 = x_values[j:j + 1]
-        y1 = y_values[i:i + 1]
-        y2 = y_values[i + 1:i + 2]
-        f1 = values[i][j]; f3 = 0.
-        f2 = values[i + 1][j]; f4 = 0.
-        
+    elif x_values.max() <= x:
+        x1, x2 = x_values[j-2:j]
+        y1, y2 = y_values[i-1:i+1]
+        if x_values.max() < x:
+            f1 = values[i-1][j-1]; f3 = 0.
+            f2 = values[i][j-1]; f4 = 0.
+        else:
+            f1, f3 = values[i-1][j-1:j+1]
+            f2, f4 = values[i][j-1:j+1]
         dx = 0.; dy = y - y1
         lx = x2 - x1; ly = y2 - y1
 
-    elif x_values.min() > x:
-        x1 = x_values[j:j + 1]
-        x2 = x_values[j + 1:j + 2]
-        y1 = y_values[i:i + 1]
-        y2 = y_values[i + 1:i + 2]
-        f1 = 0.; f3 = values[i][j]
-        f2 = 0.; f4 = values[i + 1][j]
-
+    elif x_values.min() >= x:
+        x1 = x_values[j:j + 2]
+        y1 = y_values[i-1:i+1]
+        if x_values.min() > x:
+            f1 = 0.; f3 = values[i-1][j]
+            f2 = 0.; f4 = values[i][j]
+        else:
+            f1, f3 = values[i-1][j:j+2]
+            f2, f4 = values[i][j:j+2]
         dx = 0.; dy = y - y1
         lx = x2 - x1; ly = y2 - y1
 
-    elif y_values.min() > y:
-        x1 = x_values[j:j + 1]
-        x2 = x_values[j + 1:j + 2]
-        y1 = y_values[i:i + 1]
-        y2 = y_values[i + 1:i + 2]
-        f1 = 0.; f3 = 0.
-        f2 = values[i][j]; f4 = values[i][j + 1]
-
-        dx = x - x1; dy = 0.
+    elif y_values.min() >= y:
+        x1, x2 = x_values[j-1:j+1]
+        y1, y2 = y_values[i:i+2]
+        if y_values.min() > y:
+            f1 = 0.; f3 = 0.
+            f2, f4 = values[i][j-1:j+1]
+        else:
+            f1, f3 = values[i][j-1:j+1]
+            f2, f4 = values[i+1][j-1:j+1]
+        dx = x - x1; dy = y - y1
         lx = x2 - x1; ly = y2 - y1
 
-    elif y_values.max() < y:
-        x1 = x_values[j:j + 1]
-        x2 = x_values[j + 1:j + 2]
-        y1 = y_values[i - 1:i]
-        y2 = y_values[i:i + 1]
-        f1 = values[i][j]; f3 = values[i][j + 1]
-        f2 = 0.; f4 = 0.;
-
+    elif y_values.max() <= y:
+        x1, x2 = x_values[j-1:j+1]
+        y1, y2 = y_values[i-2:i]
+        if y_values.max() < y:
+            f1, f3 = values[i-1][j-1:j+1]
+            f2 = 0.; f4 = 0.
+        else:
+            f1, f3 = values[i-1][j-1:j+1]
+            f2, f4 = values[i][j-1:j+1]
         dx = x - x1; dy = 0.
         lx = x2 - x1; ly = y2 - y1
 
     f_fit = f1 + (f3 - f1)*dx/lx + (f2 - f1)*dy/ly + (f1 + f4 - f2 - f3)*dx*dy/(lx*ly)
-
     return f_fit
 
 def molecular_fraction(pressure):
@@ -427,7 +430,7 @@ def MolecularProfileTc():
 
     Pmass = 2.78e-4; #GA1 initial mass
     Density = 0.05; #in the middle of SF MUPPI cloud in phase diagram
-    T_a = 2100.
+    T_a = 900.
     if os.path.exists(path_out+'T'+str(T_a)):
         print '\tpath %s exist'%('t'+str(T_a))
         to_make = path_out+'T%s'%(str(T_a)); newpath = to_make[:-2]+'/'
@@ -442,7 +445,7 @@ def MolecularProfileTc():
     lst = np.arange(np.log10(pmin), np.log10(pmax), dp)
 
     #time = float(raw_input("\n\t Enter total time [Gyr] :> "))
-    time = 5.e6    #total time of simulation in year
+    time = 1.e8    #total time of simulation in year
     to_ad = 4.e3   #timestep (smaller then minimum of tcool matrix)
     to_ad = adapt(to_ad)
     filename = newpath+'press-vs-fracH2.T_atom'+str(T_a)+'.dat'
@@ -496,6 +499,7 @@ def MolecularProfileTc():
             line = '%g\t%e\t%g\t%e\t%e\t%e\n'%(p, dens_a, t_atomic, Fcoll, frac, mmol)
             fp.write(line)
             fp.flush()
+            adapt(4.e3)
             index += 1
     if pstr > 1:
         line = '#(Log10)Pressure %g at temperature %g is out of bound\n'%(pstart, tstart)
@@ -531,6 +535,7 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, path):
     dmin = 10.**dmin; dmax = 10.**dmax
     t = 0.
     ctrl = 3
+    newc = 0.
     while t < time:
         if ma <= 0. or press*mu_c*PROTONMASS/Temp < dmin or press*mu_c*PROTONMASS/Temp > dmax:
             if ma <= 0.:
@@ -562,6 +567,10 @@ def time_int(press, Pmass, Density, T_a, tcool, fh2, time, path):
             elif np.log10(Temp) <= 3.: #mh2/(mh2 + ma) > 1.e-2 and np.log10(Temp) < 3.:
                 if t < tstep*0.8:
                     frac_h2 = FitTDelta(Temp, dmax, fh2); tcooling = FitTDelta(Temp, dmax, tcool)
+                if newc < 1.:
+                    lastcool = tcooling; newc = 10.
+                tcooling = lastcool*dmax/Rho_a   #imposed by equilibrium condition
+                step_control(tstep, tcooling)
                 tfact = tfactor(tcooling, tstep)   #return tstep/tcooling
                 mass_f = 2.*frac_h2/(1.-frac_h2)    #conversion factor between number density fraction and mass fraction
                 mh2_tprec = mh2
@@ -627,14 +636,26 @@ def Temperature(Temp, tcooling, tstep):
     else:
         return 10.
 
+def step_control(dt, tcooling):
+    global tstep
+    if dt/tcooling <= 1.:
+        tstep = dt; return 1
+    else:
+        dt -= 10.
+        if dt <= 0.:
+            print '\terror! negative timestep. setting to 10.'
+            tstep = 10.; return -1
+        else:
+            step_control(dt, tcooling)
+
 def adapt(dt):
     global tstep
     if dt*destr < 2.e-3 and dt >= 10.:
-        print '\tstarting with timestep %.1e\n' % dt
+        #print '\tstarting with timestep %.1e\n' % dt
         tstep = dt
         return tstep
     elif dt*destr < 2.e-3 and dt < 10.:
-        print '\tWarning: timestep bigger then necessary. Value: %.1e\n' % dt
+        print '\tWarning: timestep larger then necessary. Value: %.1e\n' % dt
         print '\tSetting to 10 yr'
         tstep = 10.; dt = 10
         return dt
